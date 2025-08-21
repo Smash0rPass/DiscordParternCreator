@@ -52,6 +52,7 @@
       <label>Side offset (% radius)<input type="range" id="sideOffset" min="30" max="90" step="1" value="60" /></label>
       <label>BG icon opacity (%)<input type="range" id="bgAlpha" min="10" max="100" step="5" value="40" /></label>
       <label>BG copies (0–8)<input type="range" id="bgCount" min="0" max="8" step="1" value="6" /></label>
+      <label>Main image size (%)<input type="range" id="mainScale" min="50" max="200" step="1" value="100" /></label>
     </div>
 
     <div class="controls">
@@ -97,6 +98,7 @@
     const sideOffsetRange = $('sideOffset');
     const bgAlphaRange = $('bgAlpha');
     const bgCountRange = $('bgCount');
+    const mainScaleRange = $('mainScale'); // NEW
 
     const colorWheel = $('colorWheel');
     const wheelThumb = $('wheelThumb');
@@ -179,7 +181,7 @@
     }
 
     // app controls
-    ;[canvasSize, tileSize, rotationRange, darkenRange, radiusRange, sideOffsetRange, bgAlphaRange, bgCountRange, ...colorModeRadios].forEach(el => el.addEventListener('input', () => {
+    ;[canvasSize, tileSize, rotationRange, darkenRange, radiusRange, sideOffsetRange, bgAlphaRange, bgCountRange, mainScaleRange, ...colorModeRadios].forEach(el => el.addEventListener('input', () => {
       resizeCanvas(parseInt(canvasSize.value,10)); if (img) drawPattern(img);
     }));
 
@@ -199,7 +201,13 @@
 
       const T = parseInt(tileSize.value,10);
       const cx = canvas.width/2, cy = canvas.height/2;
-      const maxBig = canvas.width * 0.45; const scaleBig = Math.min(maxBig / image.width, maxBig / image.height); const wBig = image.width * scaleBig, hBig = image.height * scaleBig;
+
+      // === MAIN IMAGE SIZE (controlled by slider) ===
+      const mainScale = parseInt(mainScaleRange.value,10) / 100; // 1.0 = default
+      const baseFraction = 0.45; // original fraction of canvas
+      const maxBig = canvas.width * baseFraction * mainScale;
+      const scaleBig = Math.min(maxBig / image.width, maxBig / image.height);
+      const wBig = image.width * scaleBig, hBig = image.height * scaleBig;
 
       const count = parseInt(bgCountRange.value, 10);
       const R = Math.min(canvas.width, canvas.height) * (parseInt(radiusRange.value,10)/100);
