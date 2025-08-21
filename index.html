@@ -2,108 +2,91 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Image → Pattern Template with Download</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Image → Pattern Template (Mobile Compact)</title>
   <style>
-    :root { --radius: 16px; }
+    :root { --radius:16px; --wheel:180px; }
+    @media (max-width:640px){ :root{ --wheel:140px; } }
     *{box-sizing:border-box}
-    body {
-      margin: 0;
-      display: grid;
-      place-items: center;
-      min-height: 100vh;
-      background: #1f1f1f;
-      color: #fff;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
-      padding: 24px 12px;
+    html,body{height:100%}
+    body{
+      margin:0; color:#fff; background:#0f1217; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      display:grid; place-items:start center; padding:14px; overscroll-behavior: contain;
     }
-    .app{width:min(980px,100%); display:grid; gap:14px}
+    .app{width:min(820px,100%); display:grid; gap:12px}
     .controls{
-      display:grid; gap:10px;
-      grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
-      background: rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius: var(--radius);
-      padding:14px;
+      display:grid; gap:8px; grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
+      background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius); padding:12px;
     }
     .controls label{display:grid; gap:6px; font-size:14px}
-    input[type="file"]{display:block}
-    input[type="range"], input[type="text"], input[type="color"]{width:100%}
-    button{padding:10px 14px; border-radius:10px; border:1px solid rgba(255,255,255,.18); background:#2a2a2a; color:#fff; cursor:pointer}
+    input[type="file"]{width:100%}
+    input[type="range"], input[type="text"]{width:100%}
+    button{padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.18); background:#2a2a2a; color:#fff; cursor:pointer}
     button[disabled]{opacity:.5; cursor:not-allowed}
-    canvas{ width:100%; height:auto; border-radius: var(--radius); border:1px solid rgba(255,255,255,.08); background:#000 }
-    .color{display:flex; align-items:center; gap:8px}
-    .swatch{width:22px; height:22px; border-radius:6px; border:1px solid rgba(255,255,255,.5)}
+    canvas#main{ width:100%; height:auto; border-radius: var(--radius); border:1px solid rgba(255,255,255,.08); background:#000 }
     .row{display:grid; grid-template-columns: 1fr auto; gap:8px; align-items:center}
     .seg{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
     .seg label{display:flex; align-items:center; gap:6px}
+
+    /* Color picker */
+    .picker{ display:grid; grid-template-columns: minmax(140px,var(--wheel)) 1fr; gap:10px; align-items:center }
+    .wheel-wrap{ position:relative; width:var(--wheel); height:var(--wheel); }
+    #colorWheel{ width:var(--wheel); height:var(--wheel); border-radius: 50%; border:1px solid rgba(255,255,255,.2); cursor: crosshair; display:block; touch-action: none; }
+    .wheel-wrap{ touch-action: none; }
+    .thumb{ position:absolute; width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 2px rgba(0,0,0,.6); pointer-events:none; transform: translate(-7px, -7px); }
+    .picker .grid{ display:grid; gap:6px }
+    .picker .grid .pair{ display:grid; grid-template-columns: 110px 1fr; align-items:center; gap:6px; font-size:13px }
+    .swatch{width:28px; height:28px; border-radius:8px; border:1px solid rgba(255,255,255,.35)}
   </style>
 </head>
 <body>
   <div class="app">
-    <h1>Upload PNG → Center + Surround → Download</h1>
+    <div class="controls">
+      <label>PNG image<input type="file" id="file" accept="image/png" /></label>
+      <label>Canvas size (px)<input type="range" id="canvasSize" min="384" max="1280" step="64" value="512" /></label>
+      <label>Tile size (px)<input type="range" id="tileSize" min="60" max="320" step="2" value="140" /></label>
+      <label>Rotation (°)<input type="range" id="rotation" min="0" max="45" step="1" value="15" /></label>
+      <label>Darken background<input type="range" id="darken" min="0" max="100" step="5" value="40" /></label>
+      <label>Ring radius (% canvas)<input type="range" id="radius" min="5" max="50" step="1" value="32" /></label>
+      <label>Side offset (% radius)<input type="range" id="sideOffset" min="30" max="90" step="1" value="60" /></label>
+      <label>BG icon opacity (%)<input type="range" id="bgAlpha" min="10" max="100" step="5" value="40" /></label>
+      <label>BG copies (0–8)<input type="range" id="bgCount" min="0" max="8" step="1" value="6" /></label>
+    </div>
 
     <div class="controls">
-      <label>PNG image
-        <input type="file" id="file" accept="image/png" />
-      </label>
-      <label>Canvas size (px)
-        <input type="range" id="canvasSize" min="384" max="1024" step="64" value="512" />
-      </label>
-      <label>Tile size (px)
-        <input type="range" id="tileSize" min="60" max="220" step="2" value="140" />
-      </label>
-      <label>Rotation (degrees)
-        <input type="range" id="rotation" min="0" max="45" step="1" value="15" />
-      </label>
-      <label>Darken background factor
-        <input type="range" id="darken" min="0" max="100" step="5" value="40" />
-      </label>
-      <label>Ring radius (% of canvas)
-        <input type="range" id="radius" min="5" max="50" step="1" value="32" />
-      </label>
-      <label>Side offset (% of radius)
-        <input type="range" id="sideOffset" min="30" max="90" step="1" value="60" />
-      </label>
-      <label>Background icon opacity (%)
-        <input type="range" id="bgAlpha" min="10" max="100" step="5" value="40" />
-      </label>
-
-      <label>Background copies (0–8)
-        <input type="range" id="bgCount" min="0" max="8" step="1" value="6" />
-      </label>
-
-      <div style="grid-column:1/-1; height:1px; background:rgba(255,255,255,.1);"></div>
-
-      <div class="seg" style="grid-column:1/-1">
-        <span style="opacity:.8">Color source:</span>
+      <div class="seg" style="grid-column:1/-1"><strong>Background color:</strong>
         <label><input type="radio" name="colorMode" value="auto" checked> Auto (dominant)</label>
-        <label><input type="radio" name="colorMode" value="picker"> Picker</label>
-        <label><input type="radio" name="colorMode" value="manual"> Manual</label>
+        <label><input type="radio" name="colorMode" value="picker"> Picker (wheel + H/S/V)</label>
+        <label><input type="radio" name="colorMode" value="manual"> Manual (hex/rgb)</label>
       </div>
-      <label>Picker (roulette)
-        <div class="row">
-          <input type="color" id="colorPicker" value="#1f1f1f" />
-          <div class="swatch" id="swatch"></div>
+
+      <div class="picker" style="grid-column:1/-1">
+        <div class="wheel-wrap">
+          <canvas id="colorWheel" width="180" height="180"></canvas>
+          <div id="wheelThumb" class="thumb"></div>
         </div>
-      </label>
-      <label>Manual (hex or rgb)
-        <input type="text" id="manualColor" placeholder="#aabbcc or rgb(170,187,204)" />
-      </label>
-      <div class="row" style="grid-column:1/-1">
-        <div id="rgb">rgb(31,31,31)</div>
-        <button id="download" disabled>Download PNG</button>
+        <div class="grid">
+          <div class="pair"><span>Value/Brightness</span><input type="range" id="valSlider" min="0" max="100" step="1" value="100" /></div>
+          <div class="pair"><span>Hue</span><input type="range" id="hueSlider" min="0" max="360" step="1" value="0" /></div>
+          <div class="pair"><span>Saturation</span><input type="range" id="satSlider" min="0" max="100" step="1" value="100" /></div>
+          <div class="pair"><span>HEX</span><input type="text" id="hexInput" inputmode="text" placeholder="#aabbcc" /></div>
+          <div class="pair"><span>RGB</span><input type="text" id="rgbInput" inputmode="text" placeholder="rgb(170,187,204)" /></div>
+          <div class="pair"><span>Preview</span><div class="swatch" id="swatch"></div></div>
+          <div class="pair"><span>Current</span><div id="rgb" style="opacity:.85">rgb(31,31,31)</div></div>
+          <div class="pair"><span></span><button id="download">Download PNG</button></div>
+        </div>
       </div>
     </div>
 
-    <canvas id="canvas" width="512" height="512"></canvas>
+    <canvas id="main" width="512" height="512"></canvas>
   </div>
 
   <script>
     const $ = id => document.getElementById(id);
     const fileInput = $('file');
     const downloadBtn = $('download');
-    const canvas = $('canvas');
+    const canvas = $('main');
     const ctx = canvas.getContext('2d');
 
     const canvasSize = $('canvasSize');
@@ -115,62 +98,99 @@
     const bgAlphaRange = $('bgAlpha');
     const bgCountRange = $('bgCount');
 
-    const swatch = $('swatch');
+    const colorWheel = $('colorWheel');
+    const wheelThumb = $('wheelThumb');
+    const valSlider = $('valSlider');
+    const hueSlider = $('hueSlider');
+    const satSlider = $('satSlider');
+    const hexInput = $('hexInput');
+    const rgbInput = $('rgbInput');
+
     const rgbText = $('rgb');
-    const manualColor = $('manualColor');
-    const colorPicker = $('colorPicker');
+    const swatch = $('swatch');
     const colorModeRadios = Array.from(document.querySelectorAll('input[name="colorMode"]'));
 
     let img = null;
+    let wheelState = { h: 0, s: 1, v: 1 };
 
-    [canvasSize, tileSize, rotationRange, darkenRange, radiusRange, sideOffsetRange, bgAlphaRange, bgCountRange, manualColor, colorPicker, ...colorModeRadios]
-      .forEach(el => el.addEventListener('input', () => { resizeCanvas(parseInt(canvasSize.value,10)); if (img) drawPattern(img); }));
+    // ====== Color helpers ======
+    function hsvToRgb(h, s, v){
+      const c = v * s; const x = c * (1 - Math.abs((h / 60) % 2 - 1)); const m = v - c;
+      let r=0,g=0,b=0;
+      if (0<=h && h<60){r=c;g=x;b=0;} else if (60<=h && h<120){r=x;g=c;b=0;} else if (120<=h && h<180){r=0;g=c;b=x;} else if (180<=h && h<240){r=0;g=x;b=c;} else if (240<=h && h<300){r=x;g=0;b=c;} else {r=c;g=0;b=x;}
+      return { r: Math.round((r+m)*255), g: Math.round((g+m)*255), b: Math.round((b+m)*255) };
+    }
+    function rgbToHsv(r,g,b){ r/=255; g/=255; b/=255; const max=Math.max(r,g,b), min=Math.min(r,g,b); const d=max-min; let h; if (d===0) h=0; else if (max===r) h=60*(((g-b)/d)%6); else if (max===g) h=60*(((b-r)/d)+2); else h=60*(((r-g)/d)+4); if(h<0) h+=360; const s=max===0?0:d/max; const v=max; return {h,s,v}; }
+    function rgbToHex(r,g,b){ const toHex = n => n.toString(16).padStart(2,'0'); return `#${toHex(r)}${toHex(g)}${toHex(b)}`; }
+    function hexToRgb(hex){ hex=hex.replace('#','').trim(); if(hex.length===3) hex=hex.split('').map(c=>c+c).join(''); if(!/^([0-9a-fA-F]{6})$/.test(hex)) return null; return { r: parseInt(hex.slice(0,2),16), g: parseInt(hex.slice(2,4),16), b: parseInt(hex.slice(4,6),16) }; }
+
+    // ====== Color wheel drawing ======
+    function drawWheel(){
+      const w = colorWheel.width, h = colorWheel.height; const cx=w/2, cy=h/2; const r = Math.min(cx,cy)-1;
+      const ictx = colorWheel.getContext('2d');
+      const imgData = ictx.createImageData(w,h);
+      for (let y=0; y<h; y++){
+        for (let x=0; x<w; x++){
+          const dx = x - cx, dy = y - cy; const dist = Math.sqrt(dx*dx + dy*dy); const i = (y*w+x)*4;
+          if (dist <= r){ let angle = Math.atan2(dy, dx); if (angle < 0) angle += Math.PI*2; const hue = angle*180/Math.PI; const sat = Math.min(1, dist/r); const {r:rr,g:gg,b:bb} = hsvToRgb(hue, sat, wheelState.v); imgData.data[i]=rr; imgData.data[i+1]=gg; imgData.data[i+2]=bb; imgData.data[i+3]=255; } else { imgData.data[i+3]=0; }
+        }
+      }
+      ictx.putImageData(imgData,0,0);
+      const tx = cx + Math.cos(wheelState.h*Math.PI/180)*r*wheelState.s; const ty = cy + Math.sin(wheelState.h*Math.PI/180)*r*wheelState.s; wheelThumb.style.left=tx+'px'; wheelThumb.style.top=ty+'px';
+    }
+
+    function setWheelFromRgb(r,g,b){ const {h,s,v}=rgbToHsv(r,g,b); wheelState={h:Math.round(h),s,v}; hueSlider.value=Math.round(h); satSlider.value=Math.round(s*100); valSlider.value=Math.round(v*100); drawWheel(); updateSwatch(); }
+    function updateSwatch(){ const {r,g,b}=hsvToRgb(wheelState.h,wheelState.s,wheelState.v); const hex=rgbToHex(r,g,b); swatch.style.background=hex; hexInput.value=hex; rgbInput.value=`rgb(${r},${g},${b})`; }
+
+    function onWheelPointer(e){ e.preventDefault(); const rect=colorWheel.getBoundingClientRect(); const pt=(e.touches?e.touches[0]:e); const x=pt.clientX-rect.left, y=pt.clientY-rect.top; const cx=rect.width/2, cy=rect.height/2; const r=Math.min(cx,cy)-1; const dx=x-cx, dy=y-cy; const dist=Math.min(r, Math.sqrt(dx*dx+dy*dy)); let angle=Math.atan2(dy,dx); if(angle<0) angle+=Math.PI*2; wheelState.h=Math.round(angle*180/Math.PI); wheelState.s=Math.min(1, dist/r); hueSlider.value=wheelState.h; satSlider.value=Math.round(wheelState.s*100); drawWheel(); updateSwatch(); setColorMode('picker'); if(img) drawPattern(img); }
+
+    ['mousedown','touchstart'].forEach(ev=> colorWheel.addEventListener(ev, (e)=>{
+      onWheelPointer(e);
+      const move = (ee)=> onWheelPointer(ee);
+      const opts = {passive:false};
+      window.addEventListener('mousemove', move, opts);
+      window.addEventListener('touchmove', move, opts);
+      const up = ()=>{ window.removeEventListener('mousemove', move, opts); window.removeEventListener('touchmove', move, opts); window.removeEventListener('mouseup', up, opts); window.removeEventListener('touchend', up, opts); };
+      window.addEventListener('mouseup', up, opts);
+      window.addEventListener('touchend', up, opts);
+    }, {passive:false}));
+
+    valSlider.addEventListener('input', ()=>{ wheelState.v=parseInt(valSlider.value,10)/100; drawWheel(); updateSwatch(); if(img) drawPattern(img); setColorMode('picker'); });
+    hueSlider.addEventListener('input', ()=>{ wheelState.h=parseInt(hueSlider.value,10); drawWheel(); updateSwatch(); if(img) drawPattern(img); setColorMode('picker'); });
+    satSlider.addEventListener('input', ()=>{ wheelState.s=parseInt(satSlider.value,10)/100; drawWheel(); updateSwatch(); if(img) drawPattern(img); setColorMode('picker'); });
+
+    hexInput.addEventListener('input', ()=>{ const rgb = hexToRgb(hexInput.value || ''); if(rgb){ setWheelFromRgb(rgb.r,rgb.g,rgb.b); if(img) drawPattern(img); setColorMode('manual'); } });
+    rgbInput.addEventListener('input', ()=>{ const m=rgbInput.value.trim().match(/^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i); if(m){ const r=+m[1],g=+m[2],b=+m[3]; if(r<=255&&g<=255&&b<=255){ setWheelFromRgb(r,g,b); if(img) drawPattern(img); setColorMode('manual'); } } });
+
+    function currentColorMode(){ const r = colorModeRadios.find(x=>x.checked); return r ? r.value : 'auto'; }
+    function setColorMode(mode){ const r = colorModeRadios.find(x=>x.value===mode); if(r) r.checked = true; }
+
+    function pickBackgroundColor(image){
+      const mode = currentColorMode();
+      if (mode==='picker'){ const {r,g,b} = hsvToRgb(wheelState.h,wheelState.s,wheelState.v); return {r,g,b}; }
+      if (mode==='manual'){
+        // priority: hex, then rgb input; both update wheelState already
+        const rgb = hexToRgb(hexInput.value || '');
+        if (rgb) return rgb;
+        const m = (rgbInput.value||'').trim().match(/^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i);
+        if (m){ const r=+m[1], g=+m[2], b=+m[3]; if(r<=255&&g<=255&&b<=255) return {r,g,b}; }
+      }
+      return extractDominantColor(image);
+    }
+
+    // app controls
+    ;[canvasSize, tileSize, rotationRange, darkenRange, radiusRange, sideOffsetRange, bgAlphaRange, bgCountRange, ...colorModeRadios].forEach(el => el.addEventListener('input', () => {
+      resizeCanvas(parseInt(canvasSize.value,10)); if (img) drawPattern(img);
+    }));
 
     function resizeCanvas(n){ canvas.width = n; canvas.height = n; }
 
     fileInput.addEventListener('change', () => {
-      const file = fileInput.files[0];
-      if (!file || file.type !== 'image/png') { alert('Please upload a PNG'); return; }
-      const fr = new FileReader();
-      fr.onload = () => { img = new Image(); img.onload = () => { drawPattern(img); downloadBtn.disabled = false; }; img.src = fr.result; };
-      fr.readAsDataURL(file);
+      const file = fileInput.files[0]; if (!file || file.type !== 'image/png') { alert('Please upload a PNG'); return; }
+      const fr = new FileReader(); fr.onload = () => { img = new Image(); img.onload = () => { drawPattern(img); downloadBtn.disabled = false; }; img.src = fr.result; }; fr.readAsDataURL(file);
     });
 
-    function currentColorMode(){
-      const checked = colorModeRadios.find(r => r.checked);
-      return checked ? checked.value : 'auto';
-    }
-
-    function parseManualColor(str){
-      if(!str) return null; str = str.trim();
-      const hex = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/; // #rgb or #rrggbb
-      if(hex.test(str)){
-        let r,g,b; let h = str.slice(1);
-        if(h.length===3){ r=parseInt(h[0]+h[0],16); g=parseInt(h[1]+h[1],16); b=parseInt(h[2]+h[2],16);} else { r=parseInt(h.slice(0,2),16); g=parseInt(h.slice(2,4),16); b=parseInt(h.slice(4,6),16);} 
-        return {r,g,b};
-      }
-      const rgb = /^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i;
-      const m = str.match(rgb);
-      if(m){ const r=+m[1], g=+m[2], b=+m[3]; if(r<=255&&g<=255&&b<=255) return {r,g,b}; }
-      return null;
-    }
-
-    function pickBackgroundColor(image){
-      const mode = currentColorMode();
-      if(mode==='manual'){
-        const parsed = parseManualColor(manualColor.value);
-        if(parsed) return parsed;
-      }
-      if(mode==='picker'){
-        const hex = colorPicker.value || '#1f1f1f';
-        const parsed = parseManualColor(hex);
-        if(parsed) return parsed;
-      }
-      return extractDominantColor(image); // auto
-    }
-
     function drawPattern(image){
-      // 1) background color
       const base = pickBackgroundColor(image);
       const dark = darkenColor(base, parseInt(darkenRange.value,10)/100);
       const bgCss = `rgb(${dark.r},${dark.g},${dark.b})`;
@@ -179,21 +199,14 @@
 
       const T = parseInt(tileSize.value,10);
       const cx = canvas.width/2, cy = canvas.height/2;
+      const maxBig = canvas.width * 0.45; const scaleBig = Math.min(maxBig / image.width, maxBig / image.height); const wBig = image.width * scaleBig, hBig = image.height * scaleBig;
 
-      // 2) center image
-      const maxBig = canvas.width * 0.45;
-      const scaleBig = Math.min(maxBig / image.width, maxBig / image.height);
-      const wBig = image.width * scaleBig, hBig = image.height * scaleBig;
-
-      // 3) background copies
       const count = parseInt(bgCountRange.value, 10);
       const R = Math.min(canvas.width, canvas.height) * (parseInt(radiusRange.value,10)/100);
       const sideOffset = Math.round(R * (parseInt(sideOffsetRange.value,10)/100));
-      const s = T / Math.max(image.width, image.height);
-      const wSmall = image.width * s; const hSmall = image.height * s;
+      const s = T / Math.max(image.width, image.height); const wSmall = image.width * s, hSmall = image.height * s;
       const rot = (parseInt(rotationRange.value,10) * Math.PI) / 180;
 
-      // Positions: if count == 6 → diamond/emerald (two per side). Else → evenly spaced circle (starting from top).
       let positions = [];
       if(count === 6){
         positions = [
@@ -206,64 +219,45 @@
         ];
       } else {
         for(let i=0;i<count;i++){
-          const ang = (-90 + i * (360 / Math.max(1,count))) * Math.PI / 180; // start at top
+          const ang = (-90 + i * (360 / Math.max(1,count))) * Math.PI / 180; // start top
           positions.push({ x: cx + R * Math.cos(ang), y: cy + R * Math.sin(ang), idx:i });
         }
       }
 
       positions.forEach((p, i) => {
-        ctx.save();
-        ctx.globalAlpha = Math.max(0.01, parseInt(bgAlphaRange.value,10)/100);
-        ctx.translate(p.x, p.y);
-        // Rotation rule: for 6-diamond use your spec; for circle alternate starting with right at top
-        let angle = 0;
-        if(count === 6){
-          const role = p.role;
-          if(role==='top' || role==='rightBottom' || role==='leftBottom') angle = +rot; else angle = -rot;
-        } else {
-          angle = (i % 2 === 0) ? +rot : -rot; // alternate
-        }
-        ctx.rotate(angle);
-        ctx.drawImage(image, -wSmall/2, -hSmall/2, wSmall, hSmall);
-        ctx.restore();
+        ctx.save(); ctx.globalAlpha = Math.max(0.01, parseInt(bgAlphaRange.value,10)/100); ctx.translate(p.x, p.y);
+        let angle = 0; if(count === 6){ const role=p.role; if(role==='top' || role==='rightBottom' || role==='leftBottom') angle = +rot; else angle = -rot; } else { angle = (i % 2 === 0) ? +rot : -rot; }
+        ctx.rotate(angle); ctx.drawImage(image, -wSmall/2, -hSmall/2, wSmall, hSmall); ctx.restore();
       });
 
-      // 4) draw center last
       ctx.drawImage(image, cx-wBig/2, cy-hBig/2, wBig, hBig);
     }
 
     function extractDominantColor(image){
-      const c = document.createElement('canvas'); c.width = 128; c.height = 128;
-      const cx = c.getContext('2d', { willReadFrequently:true });
-      cx.drawImage(image,0,0,c.width,c.height);
-      const data = cx.getImageData(0,0,c.width,c.height).data;
+      const c = document.createElement('canvas'); c.width = 128; c.height = 128; const cx = c.getContext('2d', { willReadFrequently:true });
+      cx.drawImage(image,0,0,c.width,c.height); const data = cx.getImageData(0,0,c.width,c.height).data;
       const bins = new Uint32Array(4096); const sumR = new Uint32Array(4096); const sumG = new Uint32Array(4096); const sumB = new Uint32Array(4096);
       for (let i=0;i<data.length;i+=4){ const a=data[i+3]; if(a<120) continue; const r=data[i],g=data[i+1],b=data[i+2]; const idx=((r>>4)<<8)|((g>>4)<<4)|(b>>4); bins[idx]++; sumR[idx]+=r; sumG[idx]+=g; sumB[idx]+=b; }
       let best=0, idx=0; for(let k=0;k<4096;k++){ if(bins[k]>best){best=bins[k]; idx=k;} }
-      if(!best) return {r:32,g:32,b:32};
-      return { r: Math.round(sumR[idx]/best), g: Math.round(sumG[idx]/best), b: Math.round(sumB[idx]/best) };
+      if(!best) return {r:32,g:32,b:32}; return { r: Math.round(sumR[idx]/best), g: Math.round(sumG[idx]/best), b: Math.round(sumB[idx]/best) };
     }
 
     function darkenColor({r,g,b}, factor){
-      const {h,s,l} = rgbToHsl(r,g,b);
-      const newL = Math.max(0, l * (1 - factor));
-      const {r:rr,g:gg,b:bb} = hslToRgb(h,s,newL);
-      return {r:rr,g:gg,b:bb};
+      const toHsl=(r,g,b)=>{ r/=255; g/=255; b/=255; const max=Math.max(r,g,b), min=Math.min(r,g,b); let h,s,l=(max+min)/2; if(max===min){h=s=0;} else { const d=max-min; s=l>0.5? d/(2-max-min): d/(max+min); switch(max){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break;} h/=6;} return {h,s,l}; };
+      const fromHsl=(h,s,l)=>{ let r,g,b; if(s===0){r=g=b=l;} else { const hue2rgb=(p,q,t)=>{ if(t<0)t+=1; if(t>1)t-=1; if(t<1/6)return p+(q-p)*6*t; if(t<1/2)return q; if(t<2/3)return p+(q-p)*(2/3-t)*6; return p; }; const q=l<0.5? l*(1+s): l+s-l*s; const p=2*l-q; r=hue2rgb(p,q,h+1/3); g=hue2rgb(p,q,h); b=hue2rgb(p,q,h-1/3);} return {r:Math.round(r*255), g:Math.round(g*255), b:Math.round(b*255)}; };
+      const {h,s,l}=toHsl(r,g,b); const newL=Math.max(0, l*(1-factor)); return fromHsl(h,s,newL);
     }
 
-    function rgbToHsl(r,g,b){ r/=255; g/=255; b/=255; const max=Math.max(r,g,b), min=Math.min(r,g,b); let h,s,l=(max+min)/2; if(max===min){h=s=0;} else { const d=max-min; s=l>0.5? d/(2-max-min): d/(max+min); switch(max){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break;} h/=6;} return {h,s,l}; }
-    function hslToRgb(h,s,l){ let r,g,b; if(s===0){r=g=b=l;} else { const hue2rgb=(p,q,t)=>{ if(t<0)t+=1; if(t>1)t-=1; if(t<1/6)return p+(q-p)*6*t; if(t<1/2)return q; if(t<2/3)return p+(q-p)*(2/3-t)*6; return p; }; const q=l<0.5? l*(1+s): l+s-l*s; const p=2*l-q; r=hue2rgb(p,q,h+1/3); g=hue2rgb(p,q,h); b=hue2rgb(p,q,h-1/3);} return {r:Math.round(r*255), g:Math.round(g*255), b:Math.round(b*255)}; }
+    function randomName(prefix='template'){
+      const d=new Date(); const z=n=>String(n).padStart(2,'0'); return `${prefix}-${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}-${Math.random().toString(36).slice(2,8)}.png`;
+    }
 
     downloadBtn.addEventListener('click', () => {
-      const link = document.createElement('a');
-      link.download = 'template-' + Math.random().toString(36).slice(2,10) + '.png';
-      link.href = canvas.toDataURL('image/png');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      canvas.toBlob(blob => { if(!blob) return; const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=randomName('template'); a.click(); URL.revokeObjectURL(a.href); }, 'image/png');
     });
 
-    resizeCanvas(parseInt(canvasSize.value,10));
+    function init(){ drawWheel(); resizeCanvas(parseInt(canvasSize.value,10)); }
+    init();
   </script>
 </body>
 </html>
